@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  logmanager:
+    image: node:alpine
+    container_name: logmanager
+    network_mode: "host"
+    working_dir: /app
+    volumes:
+      - ./app:/app
+    command: sh -c "if [ ! -f package.json ]; then npm init -y && npm install express mongodb dotenv cors helmet express-rate-limit bcryptjs jsonwebtoken; fi && node index.js"
