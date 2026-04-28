@@ -107,6 +107,34 @@ app.post('/api/login', (req, res) => {
     }
 });
 
+app.get('/api/logs-view', async (req, res) => {
+    try {
+        const { appId, level, type } = req.query;
+        const query = {};
+        if (appId) query.appId = appId;
+        if (level) query.level = level;
+        if (type) query.type = type;
+
+        const logs = await db.collection('logs')
+            .find(query)
+            .sort({ timestamp: -1 })
+            .limit(100)
+            .toArray();
+        res.json({ success: true, data: logs, error: null });
+    } catch (err) {
+        res.status(500).json({ success: false, data: null, error: err.message });
+    }
+});
+
+app.get('/api/apps-view', async (req, res) => {
+    try {
+        const apps = await db.collection('apps').find({}).toArray();
+        res.json({ success: true, data: apps, error: null });
+    } catch (err) {
+        res.status(500).json({ success: false, data: null, error: err.message });
+    }
+});
+
 app.get('/api/status', (req, res) => {
     res.json({ success: true, data: { status: 'online', db: !!db }, error: null });
 });
