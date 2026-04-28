@@ -102,6 +102,11 @@ app.get('/api/status', (req, res) => {
     res.json({ success: true, data: { status: 'online', db: !!db }, error: null });
 });
 
+// React Catch-all: serve index.html for any non-API routes
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'ui/build', 'index.html'));
+});
+
 // Background Job: Check for missed heartbeats
 function startHeartbeatMonitor() {
     console.log('Starting heartbeat monitor...');
