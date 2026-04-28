@@ -140,7 +140,7 @@ app.get('/api/status', (req, res) => {
 });
 
 // React Catch-all: serve index.html for any non-API routes
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
     res.sendFile(path.join(__dirname, 'ui/build', 'index.html'));
 });
 
