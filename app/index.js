@@ -1,17 +1,12 @@
 const express = require('express');
 const { MongoClient } = require('mongodb');
 const path = require('path');
-const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const config = require('./config.js');
 
 const app = express();
 
-// Security Middleware
-app.use(helmet({
-    contentSecurityPolicy: false, // Disable CSP to prevent upgrade-insecure-requests
-    hsts: false // Disable HSTS to allow HTTP access
-}));
+// Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'ui/build')));
 
