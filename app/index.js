@@ -8,7 +8,10 @@ const config = require('./config.js');
 const app = express();
 
 // Security Middleware
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: false, // Disable CSP to prevent upgrade-insecure-requests
+    hsts: false // Disable HSTS to allow HTTP access
+}));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'ui/build')));
 
