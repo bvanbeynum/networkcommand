@@ -83,19 +83,6 @@ app.post('/api/logs', validateApiKey, async (req, res) => {
     }
 });
 
-app.post('/api/heartbeat', validateApiKey, async (req, res) => {
-    try {
-        const now = new Date();
-        await db.collection('apps').updateOne(
-            { appId: req.appId },
-            { $set: { lastHeartbeat: now, status: 'HEALTHY' } }
-        );
-        res.json({ success: true, data: { lastHeartbeat: now }, error: null });
-    } catch (err) {
-        res.status(500).json({ success: false, data: null, error: err.message });
-    }
-});
-
 app.post('/api/login', (req, res) => {
     const { password } = req.body;
     if (password === config.frontendPassword) {
@@ -135,7 +122,7 @@ app.get('/api/apps-view', async (req, res) => {
 
 app.post('/api/apps', async (req, res) => {
     try {
-        const { name, appId, heartbeatIntervalMin } = req.body;
+        const { name, appId } = req.body;
         if (!name || !appId) {
             return res.status(400).json({ success: false, data: null, error: 'Name and App ID are required' });
         }
@@ -147,9 +134,6 @@ app.post('/api/apps', async (req, res) => {
             name,
             appId,
             apiKey,
-            heartbeatIntervalMin: parseInt(heartbeatIntervalMin) || 5,
-            lastHeartbeat: null,
-            status: 'OFFLINE',
             createdAt: new Date()
         };
 
@@ -189,35 +173,7 @@ app.get('/{*path}', (req, res) => {
     res.sendFile(path.join(__dirname, 'ui/build', 'index.html'));
 });
 
-// Background Job: Check for missed heartbeats
-function startHeartbeatMonitor() {
-    console.log('Starting heartbeat monitor...');
-    setInterval(async () => {
-        try {
-            const now = new Date();
-            const apps = await db.collection('apps').find({ status: 'HEALTHY' }).toArray();
-
-            for (const application of apps) {
-                const intervalMs = (application.heartbeatIntervalMin || 5) * 60 * 1000;
-                const lastHeartbeat = new Date(application.lastHeartbeat);
-                
-                if (now - lastHeartbeat > intervalMs) {
-                    console.log(`App ${application.name} (${application.appId}) missed heartbeat. Setting OFFLINE.`);
-                    await db.collection('apps').updateOne(
-                        { _id: application._id },
-                        { $set: { status: 'OFFLINE' } }
-                    );
-                    // TODO: Trigger proactive alert (email/webhook)
-                }
-            }
-        } catch (err) {
-            console.error('Heartbeat monitor error:', err);
-        }
-    }, 1 * 60 * 1000); // Check every minute
-}
-
 connectDb().then(() => {
-    startHeartbeatMonitor();
     app.listen(config.port, () => {
         console.log(`LogManager service listening on port ${config.port}`);
     });

@@ -13,7 +13,7 @@ function App() {
   const [filter, setFilter] = useState({ appId: '', level: '', type: '' });
   
   // New App Form State
-  const [newApp, setNewApp] = useState({ name: '', appId: '', heartbeatIntervalMin: 5 });
+  const [newApp, setNewApp] = useState({ name: '', appId: '' });
 
   const fetchData = useCallback(async () => {
     if (!isLoggedIn) return;
@@ -24,7 +24,7 @@ function App() {
         if (logsData.success) setLogs(logsData.data);
       }
 
-      if (activeTab === 'heartbeats' || activeTab === 'apps') {
+      if (activeTab === 'apps') {
         const appsRes = await fetch('/api/apps-view');
         const appsData = await appsRes.json();
         if (appsData.success) setApps(appsData.data);
@@ -74,7 +74,7 @@ function App() {
       });
       const result = await res.json();
       if (result.success) {
-        setNewApp({ name: '', appId: '', heartbeatIntervalMin: 5 });
+        setNewApp({ name: '', appId: '' });
         fetchData();
       } else {
         alert(result.error);
@@ -126,7 +126,6 @@ function App() {
           <nav>
             <button className={activeTab === 'logs' ? 'active' : ''} onClick={() => setActiveTab('logs')}>Logs</button>
             <button className={activeTab === 'errors' ? 'active' : ''} onClick={() => setActiveTab('errors')}>Error Groups</button>
-            <button className={activeTab === 'heartbeats' ? 'active' : ''} onClick={() => setActiveTab('heartbeats')}>Heartbeats</button>
             <button className={activeTab === 'apps' ? 'active' : ''} onClick={() => setActiveTab('apps')}>App Management</button>
           </nav>
         </div>
@@ -206,35 +205,6 @@ function App() {
           </section>
         )}
 
-        {activeTab === 'heartbeats' && (
-          <section>
-            <table>
-              <thead>
-                <tr>
-                  <th>App Name</th>
-                  <th>App ID</th>
-                  <th>Last Heartbeat</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {apps.map((app, i) => (
-                  <tr key={i}>
-                    <td>{app.name}</td>
-                    <td>{app.appId}</td>
-                    <td>{app.lastHeartbeat ? new Date(app.lastHeartbeat).toLocaleString() : 'Never'}</td>
-                    <td>
-                      <span className={`status-badge ${app.status?.toLowerCase()}`}>
-                        {app.status || 'UNKNOWN'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        )}
-
         {activeTab === 'apps' && (
           <section className="apps-mgmt">
             <div className="card">
@@ -242,7 +212,6 @@ function App() {
               <form onSubmit={handleCreateApp} className="inline-form">
                 <input placeholder="App Name (e.g. My Website)" value={newApp.name} onChange={e => setNewApp({...newApp, name: e.target.value})} required />
                 <input placeholder="Unique ID (e.g. website-01)" value={newApp.appId} onChange={e => setNewApp({...newApp, appId: e.target.value})} required />
-                <input type="number" placeholder="Heartbeat Min" value={newApp.heartbeatIntervalMin} onChange={e => setNewApp({...newApp, heartbeatIntervalMin: e.target.value})} />
                 <button type="submit">Create App & Key</button>
               </form>
             </div>
