@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 
 function App() {
@@ -10,6 +10,21 @@ function App() {
   const [apps, setApps] = useState([]);
   const [activeTab, setActiveTab] = useState('logs');
   const [filter, setFilter] = useState({ appId: '', level: '', type: '' });
+
+  const fetchData = useCallback(async () => {
+    if (!isLoggedIn) return;
+    try {
+      const logsRes = await fetch(`/api/logs-view?appId=${filter.appId}&level=${filter.level}&type=${filter.type}`);
+      const logsData = await logsRes.json();
+      if (logsData.success) setLogs(logsData.data);
+
+      const appsRes = await fetch('/api/apps-view');
+      const appsData = await appsRes.json();
+      if (appsData.success) setApps(appsData.data);
+    } catch (err) {
+      console.error('Failed to fetch data', err);
+    }
+  }, [isLoggedIn, filter.appId, filter.level, filter.type]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -35,21 +50,6 @@ function App() {
     }
   };
 
-  const fetchData = async () => {
-    if (!isLoggedIn) return;
-    try {
-      const logsRes = await fetch(`/api/logs-view?appId=${filter.appId}&level=${filter.level}&type=${filter.type}`);
-      const logsData = await logsRes.json();
-      if (logsData.success) setLogs(logsData.data);
-
-      const appsRes = await fetch('/api/apps-view');
-      const appsData = await appsRes.json();
-      if (appsData.success) setApps(appsData.data);
-    } catch (err) {
-      console.error('Failed to fetch data', err);
-    }
-  };
-
   useEffect(() => {
     if (localStorage.getItem('logManagerAuth') === 'true') {
       setIsLoggedIn(true);
@@ -62,7 +62,7 @@ function App() {
       const interval = setInterval(fetchData, 30000); // Refresh every 30s
       return () => clearInterval(interval);
     }
-  }, [isLoggedIn, filter]);
+  }, [isLoggedIn, fetchData]);
 
   if (!isLoggedIn) {
     return (
