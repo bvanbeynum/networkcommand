@@ -8,23 +8,37 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState([]);
   const [apps, setApps] = useState([]);
+  const [errorSummary, setErrorSummary] = useState([]);
   const [activeTab, setActiveTab] = useState('logs');
   const [filter, setFilter] = useState({ appId: '', level: '', type: '' });
+  
+  // New App Form State
+  const [newApp, setNewApp] = useState({ name: '', appId: '', heartbeatIntervalMin: 5 });
 
   const fetchData = useCallback(async () => {
     if (!isLoggedIn) return;
     try {
-      const logsRes = await fetch(`/api/logs-view?appId=${filter.appId}&level=${filter.level}&type=${filter.type}`);
-      const logsData = await logsRes.json();
-      if (logsData.success) setLogs(logsData.data);
+      if (activeTab === 'logs') {
+        const logsRes = await fetch(`/api/logs-view?appId=${filter.appId}&level=${filter.level}&type=${filter.type}`);
+        const logsData = await logsRes.json();
+        if (logsData.success) setLogs(logsData.data);
+      }
 
-      const appsRes = await fetch('/api/apps-view');
-      const appsData = await appsRes.json();
-      if (appsData.success) setApps(appsData.data);
+      if (activeTab === 'heartbeats' || activeTab === 'apps') {
+        const appsRes = await fetch('/api/apps-view');
+        const appsData = await appsRes.json();
+        if (appsData.success) setApps(appsData.data);
+      }
+
+      if (activeTab === 'errors') {
+        const summaryRes = await fetch('/api/errors-summary');
+        const summaryData = await summaryRes.json();
+        if (summaryData.success) setErrorSummary(summaryData.data);
+      }
     } catch (err) {
       console.error('Failed to fetch data', err);
     }
-  }, [isLoggedIn, filter.appId, filter.level, filter.type]);
+  }, [isLoggedIn, activeTab, filter.appId, filter.level, filter.type]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -50,6 +64,26 @@ function App() {
     }
   };
 
+  const handleCreateApp = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/apps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newApp)
+      });
+      const result = await res.json();
+      if (result.success) {
+        setNewApp({ name: '', appId: '', heartbeatIntervalMin: 5 });
+        fetchData();
+      } else {
+        alert(result.error);
+      }
+    } catch (err) {
+      alert('Failed to create app');
+    }
+  };
+
   useEffect(() => {
     if (localStorage.getItem('logManagerAuth') === 'true') {
       setIsLoggedIn(true);
@@ -59,7 +93,7 @@ function App() {
   useEffect(() => {
     if (isLoggedIn) {
       fetchData();
-      const interval = setInterval(fetchData, 30000); // Refresh every 30s
+      const interval = setInterval(fetchData, 30000);
       return () => clearInterval(interval);
     }
   }, [isLoggedIn, fetchData]);
@@ -91,8 +125,9 @@ function App() {
           <h1>LogManager</h1>
           <nav>
             <button className={activeTab === 'logs' ? 'active' : ''} onClick={() => setActiveTab('logs')}>Logs</button>
+            <button className={activeTab === 'errors' ? 'active' : ''} onClick={() => setActiveTab('errors')}>Error Groups</button>
             <button className={activeTab === 'heartbeats' ? 'active' : ''} onClick={() => setActiveTab('heartbeats')}>Heartbeats</button>
-            <button className={activeTab === 'apps' ? 'active' : ''} onClick={() => setActiveTab('apps')}>Apps</button>
+            <button className={activeTab === 'apps' ? 'active' : ''} onClick={() => setActiveTab('apps')}>App Management</button>
           </nav>
         </div>
         <button className="logout-btn" onClick={() => {
@@ -103,13 +138,9 @@ function App() {
 
       <main>
         {activeTab === 'logs' && (
-          <section className="logs-section">
+          <section>
             <div className="filters">
-              <input 
-                placeholder="App ID" 
-                value={filter.appId} 
-                onChange={(e) => setFilter({...filter, appId: e.target.value})} 
-              />
+              <input placeholder="App ID" value={filter.appId} onChange={(e) => setFilter({...filter, appId: e.target.value})} />
               <select value={filter.level} onChange={(e) => setFilter({...filter, level: e.target.value})}>
                 <option value="">All Levels</option>
                 <option value="INFO">INFO</option>
@@ -122,8 +153,9 @@ function App() {
                 <option value="JOB">JOB</option>
                 <option value="ERROR">ERROR</option>
               </select>
+              <button onClick={fetchData}>Refresh</button>
             </div>
-            <table className="logs-table">
+            <table>
               <thead>
                 <tr>
                   <th>Timestamp</th>
@@ -148,9 +180,35 @@ function App() {
           </section>
         )}
 
+        {activeTab === 'errors' && (
+          <section>
+            <h2>Error Summary (Top 20)</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Occurrences</th>
+                  <th>App(s)</th>
+                  <th>Message</th>
+                  <th>Last Seen</th>
+                </tr>
+              </thead>
+              <tbody>
+                {errorSummary.map((err, i) => (
+                  <tr key={i}>
+                    <td>{err.count}</td>
+                    <td>{err.appIds.join(', ')}</td>
+                    <td>{err.message}</td>
+                    <td>{new Date(err.lastSeen).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+
         {activeTab === 'heartbeats' && (
-          <section className="heartbeats-section">
-            <table className="apps-table">
+          <section>
+            <table>
               <thead>
                 <tr>
                   <th>App Name</th>
@@ -179,8 +237,37 @@ function App() {
 
         {activeTab === 'apps' && (
           <section className="apps-mgmt">
-            <h2>App Management</h2>
-            <p>Register new applications and manage API keys here.</p>
+            <div className="card">
+              <h3>Register New Application</h3>
+              <form onSubmit={handleCreateApp} className="inline-form">
+                <input placeholder="App Name (e.g. My Website)" value={newApp.name} onChange={e => setNewApp({...newApp, name: e.target.value})} required />
+                <input placeholder="Unique ID (e.g. website-01)" value={newApp.appId} onChange={e => setNewApp({...newApp, appId: e.target.value})} required />
+                <input type="number" placeholder="Heartbeat Min" value={newApp.heartbeatIntervalMin} onChange={e => setNewApp({...newApp, heartbeatIntervalMin: e.target.value})} />
+                <button type="submit">Create App & Key</button>
+              </form>
+            </div>
+            
+            <h3>Existing Applications</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>App ID</th>
+                  <th>API Key</th>
+                  <th>Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {apps.map((app, i) => (
+                  <tr key={i}>
+                    <td>{app.name}</td>
+                    <td>{app.appId}</td>
+                    <td><code className="api-key">{app.apiKey}</code></td>
+                    <td>{new Date(app.createdAt).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </section>
         )}
       </main>

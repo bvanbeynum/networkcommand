@@ -133,6 +133,53 @@ app.get('/api/apps-view', async (req, res) => {
     }
 });
 
+app.post('/api/apps', async (req, res) => {
+    try {
+        const { name, appId, heartbeatIntervalMin } = req.body;
+        if (!name || !appId) {
+            return res.status(400).json({ success: false, data: null, error: 'Name and App ID are required' });
+        }
+
+        const crypto = require('crypto');
+        const apiKey = crypto.randomBytes(24).toString('hex');
+
+        const newApp = {
+            name,
+            appId,
+            apiKey,
+            heartbeatIntervalMin: parseInt(heartbeatIntervalMin) || 5,
+            lastHeartbeat: null,
+            status: 'OFFLINE',
+            createdAt: new Date()
+        };
+
+        await db.collection('apps').insertOne(newApp);
+        res.json({ success: true, data: newApp, error: null });
+    } catch (err) {
+        res.status(500).json({ success: false, data: null, error: err.message });
+    }
+});
+
+app.get('/api/errors-summary', async (req, res) => {
+    try {
+        const summary = await db.collection('logs').aggregate([
+            { $match: { errorHash: { $ne: null } } },
+            { $group: {
+                _id: "$errorHash",
+                message: { $first: "$message" },
+                count: { $sum: 1 },
+                lastSeen: { $max: "$timestamp" },
+                appIds: { $addToSet: "$appId" }
+            }},
+            { $sort: { count: -1 } },
+            { $limit: 20 }
+        ]).toArray();
+        res.json({ success: true, data: summary, error: null });
+    } catch (err) {
+        res.status(500).json({ success: false, data: null, error: err.message });
+    }
+});
+
 app.get('/api/status', (req, res) => {
     res.json({ success: true, data: { status: 'online', db: !!db }, error: null });
 });
