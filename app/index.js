@@ -98,6 +98,15 @@ app.post('/api/heartbeat', validateApiKey, async (req, res) => {
     }
 });
 
+app.post('/api/login', (req, res) => {
+    const { password } = req.body;
+    if (password === config.frontendPassword) {
+        res.json({ success: true, data: 'Logged in', error: null });
+    } else {
+        res.status(401).json({ success: false, data: null, error: 'Invalid password' });
+    }
+});
+
 app.get('/api/status', (req, res) => {
     res.json({ success: true, data: { status: 'online', db: !!db }, error: null });
 });
