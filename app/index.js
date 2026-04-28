@@ -60,16 +60,23 @@ app.post('/api/logs', validateApiKey, async (req, res) => {
     try {
         const { type, level, message, metadata } = req.body;
         
+        let errorHash = null;
+        if (type === 'ERROR' || level === 'ERROR') {
+            const crypto = require('crypto');
+            // Create a hash from the message and any stack trace in metadata
+            const hashSource = `${message}${metadata?.stack || ''}`;
+            errorHash = crypto.createHash('md5').update(hashSource).digest('hex');
+        }
+
         const logEntry = {
             appId: req.appId,
             timestamp: new Date(),
             type: type || 'WEB_APP',
             level: level || 'INFO',
             message,
-            metadata: metadata || {}
+            metadata: metadata || {},
+            errorHash
         };
-
-        // TODO: Generate errorHash for grouping if type === 'ERROR'
 
         await db.collection('logs').insertOne(logEntry);
         res.json({ success: true, data: 'Log recorded', error: null });
