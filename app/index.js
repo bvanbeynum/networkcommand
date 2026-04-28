@@ -10,7 +10,7 @@ const app = express();
 // Security Middleware
 app.use(helmet());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'ui/build')));
 
 // Rate Limiting
 const limiter = rateLimit({
@@ -140,7 +140,7 @@ app.get('/api/status', (req, res) => {
 });
 
 // React Catch-all: serve index.html for any non-API routes
-app.get('/*path', (req, res) => {
+app.get('/{*path}', (req, res) => {
     res.sendFile(path.join(__dirname, 'ui/build', 'index.html'));
 });
 
