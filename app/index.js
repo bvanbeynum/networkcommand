@@ -102,7 +102,35 @@ app.get('/api/status', (req, res) => {
     res.json({ success: true, data: { status: 'online', db: !!db }, error: null });
 });
 
+// Background Job: Check for missed heartbeats
+function startHeartbeatMonitor() {
+    console.log('Starting heartbeat monitor...');
+    setInterval(async () => {
+        try {
+            const now = new Date();
+            const apps = await db.collection('apps').find({ status: 'HEALTHY' }).toArray();
+
+            for (const application of apps) {
+                const intervalMs = (application.heartbeatIntervalMin || 5) * 60 * 1000;
+                const lastHeartbeat = new Date(application.lastHeartbeat);
+                
+                if (now - lastHeartbeat > intervalMs) {
+                    console.log(`App ${application.name} (${application.appId}) missed heartbeat. Setting OFFLINE.`);
+                    await db.collection('apps').updateOne(
+                        { _id: application._id },
+                        { $set: { status: 'OFFLINE' } }
+                    );
+                    // TODO: Trigger proactive alert (email/webhook)
+                }
+            }
+        } catch (err) {
+            console.error('Heartbeat monitor error:', err);
+        }
+    }, 1 * 60 * 1000); // Check every minute
+}
+
 connectDb().then(() => {
+    startHeartbeatMonitor();
     app.listen(config.port, () => {
         console.log(`LogManager service listening on port ${config.port}`);
     });
