@@ -8,7 +8,7 @@ const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'ui/build')));
+app.use(express.static(path.join(__dirname, 'build')));
 
 // Rate Limiting
 const limiter = rateLimit({
@@ -170,12 +170,12 @@ app.get('/api/status', (req, res) => {
 
 // React Catch-all: serve index.html for any non-API routes
 app.get('/{*path}', (req, res) => {
-    res.sendFile(path.join(__dirname, 'ui/build', 'index.html'));
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
 connectDb().then(() => {
     app.listen(config.port, () => {
-        console.log(`Network Manager service listening on port ${config.port}`);
+        console.log(`Network Manager service listening on port ${config.port} in ${config.mode || 'prod'} mode`);
     });
 });
 
