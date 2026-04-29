@@ -1,22 +1,21 @@
-# Stage 1: Build stage
-FROM node:alpine AS builder
+FROM node:alpine
+
 WORKDIR /app
+
+# Copy package files
 COPY package*.json ./
+
+# Install all dependencies (including devDeps for the build)
 RUN npm install
+
+# Copy the rest of the application
 COPY . .
+
+# Run the React build
 RUN npm run build
 
-# Stage 2: Production stage
-FROM node:alpine
-WORKDIR /app
-COPY package*.json ./
-# Install ONLY production dependencies
-RUN npm install --omit=dev
-# Copy built frontend from builder stage
-COPY --from=builder /app/build ./build
-# Copy backend code
-COPY . .
-# Expose port
+# Expose the application port
 EXPOSE 9201
-# Start the application using the start script
+
+# Start the application with auto-reloading
 CMD ["npm", "start"]
