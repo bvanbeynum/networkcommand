@@ -25,6 +25,7 @@ pids
 
 # Build directories and coverage
 build/
+app/build/
 dist/
 coverage/
 .nyc_output
