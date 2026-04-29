@@ -175,7 +175,7 @@ app.get('/{*path}', (req, res) => {
 
 connectDb().then(() => {
     app.listen(config.port, () => {
-        console.log(`LogManager service listening on port ${config.port}`);
+        console.log(`Network Manager service listening on port ${config.port}`);
     });
 });
 

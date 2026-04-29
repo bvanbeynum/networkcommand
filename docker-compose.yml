@@ -1,11 +1,11 @@
 version: '3.8'
 
 services:
-  logmanager:
+  networkmanager:
     build:
       context: ./app
       dockerfile: Dockerfile
-    container_name: logmanager
+    container_name: networkmanager
     network_mode: "host"
     volumes:
       - ./app:/app

@@ -53,7 +53,7 @@ function App() {
       const result = await response.json();
       if (result.success) {
         setIsLoggedIn(true);
-        localStorage.setItem('logManagerAuth', 'true');
+        localStorage.setItem('networkManagerAuth', 'true');
       } else {
         setError('Invalid password');
       }
@@ -85,7 +85,7 @@ function App() {
   };
 
   useEffect(() => {
-    if (localStorage.getItem('logManagerAuth') === 'true') {
+    if (localStorage.getItem('networkManagerAuth') === 'true') {
       setIsLoggedIn(true);
     }
   }, []);
@@ -102,7 +102,7 @@ function App() {
     return (
       <div className="login-container">
         <form onSubmit={handleLogin} className="login-form">
-          <h1>LogManager Login</h1>
+          <h1>Network Manager Login</h1>
           <input 
             type="password" 
             placeholder="Enter Password" 
@@ -122,7 +122,7 @@ function App() {
     <div className="App">
       <header className="App-header">
         <div className="header-left">
-          <h1>LogManager</h1>
+          <h1>Network Manager</h1>
           <nav>
             <button className={activeTab === 'logs' ? 'active' : ''} onClick={() => setActiveTab('logs')}>Logs</button>
             <button className={activeTab === 'errors' ? 'active' : ''} onClick={() => setActiveTab('errors')}>Error Groups</button>
@@ -130,7 +130,7 @@ function App() {
           </nav>
         </div>
         <button className="logout-btn" onClick={() => {
-          localStorage.removeItem('logManagerAuth');
+          localStorage.removeItem('networkManagerAuth');
           setIsLoggedIn(false);
         }}>Logout</button>
       </header>
